@@ -1,6 +1,7 @@
 from agent import Agent
 from openai import OpenAI
 import os
+from tools import image_tool
 
 def initialise_html_agent():
     client  = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
@@ -22,15 +23,40 @@ def initialise_html_agent():
 
     Do not include: ```html ``` - just return the pure html
 
+    Always include one image by using the image tool and including the returned path in the html.
+
     """
 
+    tools = [{
+    "type": "function",
+    "function": {
+        "name": "image_tool",
+        "description": "Generate an image from a text prompt and save it to a local path.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "prompt": {
+                    "type": "string",
+                    "description": "A descriptive text prompt to generate the image, e.g., 'A futuristic cityscape at sunset'."
+                }
+            },
+            "required": [
+                "prompt"
+            ],
+            "additionalProperties": False
+        },
+        "strict": True
+    }
+    }]
+
+    tool_map = {"image_tool": image_tool}
 
     html_agent = Agent(
         client=client,
         model=model,
         system_message=system_message,
-        tools=[],
-        tool_map={},
+        tools=tools,
+        tool_map=tool_map,
         max_steps=10
     )
     return html_agent
