@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Loading...</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #1a1a1a;
+            font-family: 'Arial', sans-serif;
+        }
+        canvas {
+            margin-bottom: 30px;
+        }
+        .loading-text {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 16px;
+            letter-spacing: 1px;
+        }
+    </style>
+    <script>
+        class DoublePendulum {
+            constructor(x, y) {
+                // Initial positions
+                this.x = x;
+                this.y = y;
+                
+                // Physical parameters
+                this.length1 = 120;  // Length of first rod
+                this.length2 = 120;  // Length of second rod
+                this.mass1 = 10;     // Mass of first bob
+                this.mass2 = 10;     // Mass of second bob
+                
+                // Initial angles and angular velocities
+                this.angle1 = Math.PI / 4;  // First angle (from vertical) - above horizontal
+                this.angle2 = Math.PI / 6;  // Second angle (from vertical) - above horizontal
+                this.angleVelocity1 = 0;    // Angular velocity of first pendulum
+                this.angleVelocity2 = 0;    // Angular velocity of second pendulum
+                
+                // Physics constants
+                this.gravity = 0.5;
+                this.damping = 1.0;  // No energy loss (1.0 instead of 0.999)
+                
+                // Trail parameters
+                this.trail = [];
+                this.maxTrailLength = 1000;  // Much longer trail
+                
+                // Colors
+                this.color1 = '#4CAF50';  // First bob color
+                this.color2 = '#2196F3';  // Second bob color
+                this.trailColor = 'rgba(255, 204, 0, 0.5)';  // Trail color
+            }
+            
+            update() {
+                // Store positions for trail
+                if (this.trail.length >= this.maxTrailLength) {
+                    this.trail.shift();
+                }
+                
+                // Calculate positions of the bobs
+                const x1 = this.x + this.length1 * Math.sin(this.angle1);
+                const y1 = this.y + this.length1 * Math.cos(this.angle1);
+                const x2 = x1 + this.length2 * Math.sin(this.angle2);
+                const y2 = y1 + this.length2 * Math.cos(this.angle2);
+                
+                this.trail.push({x: x2, y: y2});
+                
+                // Calculate forces using the double pendulum equations of motion
+                // These are the exact equations for a double pendulum system
+                
+                // Calculate numerators and denominators for the angle acceleration formulas
+                const mu = this.mass2 / this.mass1;
+                const num1 = -this.gravity * (2 * this.mass1 + this.mass2) * Math.sin(this.angle1) 
+                           - this.mass2 * this.gravity * Math.sin(this.angle1 - 2 * this.angle2) 
+                           - 2 * Math.sin(this.angle1 - this.angle2) * this.mass2 
+                           * (this.angleVelocity2 * this.angleVelocity2 * this.length2 
+                           + this.angleVelocity1 * this.angleVelocity1 * this.length1 * Math.cos(this.angle1 - this.angle2));
+                           
+                const num2 = 2 * Math.sin(this.angle1 - this.angle2) 
+                           * (this.angleVelocity1 * this.angleVelocity1 * this.length1 * (this.mass1 + this.mass2) 
+                           + this.gravity * (this.mass1 + this.mass2) * Math.cos(this.angle1) 
+                           + this.angleVelocity2 * this.angleVelocity2 * this.length2 * this.mass2 * Math.cos(this.angle1 - this.angle2));
+                           
+                const den1 = this.length1 * (2 * this.mass1 + this.mass2 - this.mass2 * Math.cos(2 * this.angle1 - 2 * this.angle2));
+                const den2 = this.length2 * (2 * this.mass1 + this.mass2 - this.mass2 * Math.cos(2 * this.angle1 - 2 * this.angle2));
+                
+                // Calculate angular accelerations
+                const angleAcceleration1 = num1 / den1;
+                const angleAcceleration2 = num2 / den2;
+                
+                // Update velocities and angles
+                this.angleVelocity1 += angleAcceleration1;
+                this.angleVelocity2 += angleAcceleration2;
+                
+                // No damping applied - removed to prevent energy loss
+                // this.angleVelocity1 *= this.damping;
+                // this.angleVelocity2 *= this.damping;
+                
+                // Update angles
+                this.angle1 += this.angleVelocity1;
+                this.angle2 += this.angleVelocity2;
+            }
+            
+            draw(ctx) {
+                // Calculate positions
+                const x1 = this.x + this.length1 * Math.sin(this.angle1);
+                const y1 = this.y + this.length1 * Math.cos(this.angle1);
+                const x2 = x1 + this.length2 * Math.sin(this.angle2);
+                const y2 = y1 + this.length2 * Math.cos(this.angle2);
+                
+                // Draw trail
+                if (this.trail.length > 1) {
+                    ctx.beginPath();
+                    ctx.moveTo(this.trail[0].x, this.trail[0].y);
+                    
+                    for (let i = 1; i < this.trail.length; i++) {
+                        ctx.lineTo(this.trail[i].x, this.trail[i].y);
+                    }
+                    
+                    ctx.strokeStyle = this.trailColor;
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                }
+                
+                // Draw first rod
+                ctx.beginPath();
+                ctx.moveTo(this.x, this.y);
+                ctx.lineTo(x1, y1);
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+                
+                // Draw second rod
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+                
+                // Draw first bob
+                ctx.beginPath();
+                ctx.arc(x1, y1, this.mass1, 0, Math.PI * 2);
+                ctx.fillStyle = this.color1;
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+                
+                // Draw second bob
+                ctx.beginPath();
+                ctx.arc(x2, y2, this.mass2, 0, Math.PI * 2);
+                ctx.fillStyle = this.color2;
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            }
+        }
+
+        window.onload = function() {
+            const canvas = document.getElementById('pendulumCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Set canvas size - made bigger
+            canvas.width = 600;
+            canvas.height = 600;
+            
+            // Create double pendulum - moved higher up to give more space
+            const pendulum = new DoublePendulum(canvas.width/2, 150);
+            
+            function animate() {
+                // Don't clear canvas completely - use very minimal fade to let trail build up
+                ctx.fillStyle = 'rgba(26, 26, 26, 0.01)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                // Update and draw pendulum
+                pendulum.update();
+                pendulum.draw(ctx);
+                
+                requestAnimationFrame(animate);
+            }
+            
+            // Start animation
+            animate();
+        }
+    </script>
+    <script>
+        const path = window.location.pathname;
+        function checkStatus() {
+            fetch(`/status${path}`).then(res => res.json()).then(data => {
+                if (data.ready) {
+                    window.location.href = `/result${path}`;
+                } else {
+                    setTimeout(checkStatus, 1000);
+                }
+            });
+        }
+        checkStatus();
+    </script>
+</head>
+<body>
+    <canvas id="pendulumCanvas"></canvas>
+    <div class="loading-text">Loading...</div>
+</body>
+</html>
