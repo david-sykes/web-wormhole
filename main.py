@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
-from html_agent import html_agent
+from html_agent import initialise_html_agent
 import uvicorn
 
 
@@ -14,7 +14,7 @@ async def catch_all(request: Request, path: str):
     headers = dict(request.headers)
 
     
-    
+    html_agent = initialise_html_agent()
     # Create a summary of the request
     request_info = f"Method: {method}, Path: /{path}, URL: {url}"
 
