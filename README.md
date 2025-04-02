@@ -9,10 +9,8 @@ Run: `pipenv run python main.py`
 
 
 # TO DO:
-- Add image tool
-- Add grid layout and more text
-- Add loading animation
+- Make canvas work
 - Add music tool
-- Add canvas tool
+- Add more interactivity
  
 
